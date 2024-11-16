@@ -1,10 +1,45 @@
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+
 namespace spyserv_c_api
 {
     public class Program
     {
         public static void Main(string[] args)
         {
+
             var builder = WebApplication.CreateBuilder(args);
+
+            #region Port Check
+            ////Generic implementation
+            //var app = builder.Build();
+
+
+            //if (app.Environment.IsDevelopment())
+            //{
+            //    app.UseDeveloperExceptionPage();
+            //}
+
+
+            //var lifetime = app.Lifetime;
+            //var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+            //var logger = loggerFactory.CreateLogger("Startup");
+
+            //lifetime.ApplicationStarted.Register(() =>
+            //{
+            //    var server = app.Services.GetRequiredService<IServer>();
+            //    var serverAddressesFeature = server.Features.Get<IServerAddressesFeature>();
+
+            //    if (serverAddressesFeature == null) return;
+
+            //    foreach (var address in serverAddressesFeature.Addresses)
+            //    {
+            //        logger.LogInformation($"Application is running on: {address}");
+            //    }
+            //});
+
+            //app.Run();
+            #endregion
 
             builder.Logging.ClearProviders();
 
@@ -21,6 +56,20 @@ namespace spyserv_c_api
             });
 
             var app = builder.Build();
+
+            var lifetime = app.Lifetime;
+            lifetime.ApplicationStarted.Register(() =>
+            {
+                var server = app.Services.GetRequiredService<IServer>();
+                var serverAddressesFeature = server.Features.Get<IServerAddressesFeature>();
+
+                if (serverAddressesFeature == null) return;
+
+                foreach (var address in serverAddressesFeature.Addresses)
+                {
+                    Console.WriteLine($"Application is running on: {address}");
+                }
+            });
 
             var originalOut = Console.Out;
             using var suppressedOut = new StringWriter();
@@ -47,9 +96,8 @@ namespace spyserv_c_api
                 return forecast;
             })
             .WithName("GetWeatherForecast");
-            app.UseSwagger();
+
             app.Run();
-            Console.WriteLine("Web Api was started!");
             Console.SetOut(originalOut);
         }
     }

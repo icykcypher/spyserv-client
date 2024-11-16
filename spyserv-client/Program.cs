@@ -29,11 +29,6 @@ namespace spyserv
                     Console.WriteLine("  help   - Show available commands");
                     break;
 
-                case "exit":
-                    Console.WriteLine("Shutting down...");
-                    Environment.Exit(0);
-                    break;
-
                 default:
                     Console.WriteLine($"Unknown command: {args[0]}");
                     break;
@@ -41,14 +36,18 @@ namespace spyserv
         }
         private static void StartApiAsDetachedProcess()
         {
-            var apiPath = @"C:\Path\To\YourApi\YourApiApp.exe";
+            var baseDirectory = AppContext.BaseDirectory;
+            var folderPath = Path.Combine(baseDirectory, @"..\..\..\..\spyserv-c-api\bin\Release\net8.0\spyserv-c-api.exe");
+
+            var fullPath = Path.GetFullPath(folderPath);
 
             var processInfo = new ProcessStartInfo
             {
-                FileName = apiPath,
-                UseShellExecute = true,
+                FileName = fullPath, 
+                WorkingDirectory = Path.GetDirectoryName(fullPath),
+                UseShellExecute = false,
                 CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
+                WindowStyle = ProcessWindowStyle.Minimized
             };
 
             try
