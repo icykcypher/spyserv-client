@@ -1,9 +1,11 @@
 ﻿using System.Diagnostics;
+using System.ServiceProcess;
 
 namespace spyserv
 {
     public class Program
     {
+        private static string _apiName = "spyserv-c-api";
         static void Main(string[] args)
         {
             if (args is null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
@@ -27,8 +29,11 @@ namespace spyserv
                     Console.WriteLine("  start  - Start the web application");
                     Console.WriteLine("  status - Show application status");
                     Console.WriteLine("  help   - Show available commands");
+                    Console.WriteLine("  stop   - Stop application");
                     break;
-
+                case "stop":
+                    StopApi();
+                    break;
                 default:
                     Console.WriteLine($"Unknown command: {args[0]}");
                     break;
@@ -58,6 +63,28 @@ namespace spyserv
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to start API: {ex.Message}");
+            }
+        }
+
+        private static void StopApi()
+        {
+            try
+            {
+                var processes = Process.GetProcessesByName(_apiName);
+
+                if (processes.Length > 0)
+                {
+                    foreach (var process in processes) process.Kill();
+                    Console.WriteLine("Process was stopped.");
+                }
+                else
+                {
+                    Console.WriteLine("Process wasn't found.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error while trying to kill process: {ex.Message}");
             }
         }
     }

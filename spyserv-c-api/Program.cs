@@ -7,7 +7,6 @@ namespace spyserv_c_api
     {
         public static void Main(string[] args)
         {
-
             var builder = WebApplication.CreateBuilder(args);
 
             #region Port Check
