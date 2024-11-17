@@ -16,7 +16,7 @@ namespace spyserv_c_api.Services
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                return 0;
+                return float.Parse(GetInfoFromResMonitor("resource-monitor", "cpu"));
             }
             else return -1;
         }
@@ -32,7 +32,11 @@ namespace spyserv_c_api.Services
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                return (0, 0);
+                var resStr = GetInfoFromResMonitor("resource-monitor", "cpu");
+                resStr = resStr.Replace("%", "");
+                var res = resStr.Split(new[] { " of " }, StringSplitOptions.RemoveEmptyEntries);
+
+                return (float.Parse(res[0]), float.Parse(res[1]));
             }
             else return (-1, -1);
         }
@@ -51,9 +55,25 @@ namespace spyserv_c_api.Services
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                return (0, 0, 0);
+                var resStr = GetInfoFromResMonitor("resource-monitor", "disk");
+                var res = resStr.Split(",", StringSplitOptions.RemoveEmptyEntries);
+
+                return (long.Parse(res[0]), long.Parse(res[1]), long.Parse(res[2]));
             }
             else return (-1, -1, -1);
+        }
+
+        private static string GetInfoFromResMonitor(string command, string args)
+        {
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = command,
+                Arguments = args,
+                RedirectStandardOutput = true,
+                UseShellExecute = false
+            };
+
+            using (var process = Process.Start(processInfo)) return process.StandardOutput.ReadToEnd();
         }
     }
 }

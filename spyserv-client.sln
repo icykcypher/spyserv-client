@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "spyserv", "spyserv-client\spyserv.csproj", "{49BDB9E4-1FA5-42A8-ADEE-BC276CB7A0D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "spyserv", "spyserv-client\spyserv.csproj", "{49BDB9E4-1FA5-42A8-ADEE-BC276CB7A0D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "spyserv-c-api", "spyserv-c-api\spyserv-c-api.csproj", "{20DFF08F-5505-41A7-9762-5B770ACAB377}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "spyserv-c-api", "spyserv-c-api\spyserv-c-api.csproj", "{20DFF08F-5505-41A7-9762-5B770ACAB377}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "spyserv-watch", "spyserv-watch\spyserv-watch.csproj", "{4E05C54D-847B-45AA-88FF-1F0AD4CA724F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{20DFF08F-5505-41A7-9762-5B770ACAB377}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20DFF08F-5505-41A7-9762-5B770ACAB377}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{20DFF08F-5505-41A7-9762-5B770ACAB377}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E05C54D-847B-45AA-88FF-1F0AD4CA724F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E05C54D-847B-45AA-88FF-1F0AD4CA724F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E05C54D-847B-45AA-88FF-1F0AD4CA724F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E05C54D-847B-45AA-88FF-1F0AD4CA724F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
