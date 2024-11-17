@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.ServiceProcess;
 
 namespace spyserv
 {
@@ -77,10 +76,7 @@ namespace spyserv
                     foreach (var process in processes) process.Kill();
                     Console.WriteLine("Process was stopped.");
                 }
-                else
-                {
-                    Console.WriteLine("Process wasn't found.");
-                }
+                else Console.WriteLine("Process wasn't found.");
             }
             catch (Exception ex)
             {
