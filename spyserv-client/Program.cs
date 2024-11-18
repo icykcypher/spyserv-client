@@ -34,11 +34,11 @@ namespace spyserv
                     StopSpy();
                     break;
 
-                case "configure":
+                case "track":
                     ConfigureApplication(args);
                     break;
 
-                case "rm-app":
+                case "untrack":
                     RemoveAppFromConfig(args[1]);
                     break;
                 default:
@@ -102,10 +102,12 @@ namespace spyserv
         private static void ShowCommands()
         {
             Console.WriteLine("Available commands:");
-            Console.WriteLine("  start  - Start the web application");
-            Console.WriteLine("  status - Show application status");
-            Console.WriteLine("  help   - Show available commands");
-            Console.WriteLine("  stop   - Stop application");
+            Console.WriteLine("  start              - Start the web application");
+            Console.WriteLine("  status             - Show application status");
+            Console.WriteLine("  help               - Show available commands");
+            Console.WriteLine("  track [app-name]   - Adding application to monitored apps");
+            Console.WriteLine("  untrack [app-name] - Removing application from monitored apps");
+            Console.WriteLine("  stop               - Stop application");
         }
 
         private static void ConfigureApplication(string[] args)

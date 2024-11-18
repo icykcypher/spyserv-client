@@ -21,7 +21,6 @@ namespace spyserv_c_api.Services
             else return -1;
         }
 
-        // Метод для получения использования памяти
         public static (float, float) GetMemoryUsage()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -62,7 +61,6 @@ namespace spyserv_c_api.Services
             }
             else return (-1, -1, -1);
         }
-
         private static string GetInfoFromResMonitor(string command, string args)
         {
             var processInfo = new ProcessStartInfo
