@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace spyserv_c_api.Services
 {
@@ -10,10 +11,8 @@ namespace spyserv_c_api.Services
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var res = JsonConvert.DeserializeObject<CpuResultDto>(GetCommandOutput("./scripts/resmon", "cpu")) 
-                ?? throw new Exception("Can not deserialize resmon.");
-
-                return res;
+                var command = GetCommandOutput("./scripts/resmon", "cpu");
+                return  JsonConvert.DeserializeObject<CpuResultDto>(command) ?? throw new Exception("Can not deserialize resmon.");
             }
             else throw new NotImplementedException();
         }
@@ -23,8 +22,7 @@ namespace spyserv_c_api.Services
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 var resStr = GetCommandOutput("./scripts/resmon", "memory");
-                var res = JsonConvert.DeserializeObject<MemoryResultDto>(resStr) ?? throw new Exception("Can not deserialize resmon.");
-                return res;
+                return JsonConvert.DeserializeObject<MemoryResultDto>(resStr) ?? throw new Exception("Can not deserialize resmon.");
             }
             else throw new NotImplementedException();
         }
@@ -35,8 +33,7 @@ namespace spyserv_c_api.Services
             {
                 var device = GetMainDiskFromDf();
                 var resStr = GetCommandOutput("./scripts/resmon", $"disk {device}");
-                var res =  JsonConvert.DeserializeObject<DiskResultDto>(resStr) ?? throw new Exception("Can not deserialize resmon.");
-                return res;
+                return  JsonConvert.DeserializeObject<DiskResultDto>(resStr) ?? throw new Exception("Can not deserialize resmon.");
             }
             else throw new NotImplementedException();
         }

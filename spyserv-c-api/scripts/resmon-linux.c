@@ -113,8 +113,8 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
         
-        cJSON_AddStringToObject(root, "type", "cpu");
-        cJSON_AddNumberToObject(root, "usage_percent", usage);
+        cJSON_AddStringToObject(root, "Type", "cpu");
+        cJSON_AddNumberToObject(root, "UsagePercent", usage);
     } 
     else if (strcmp(argv[1], "memory") == 0) {
         float used_percent;
@@ -125,9 +125,9 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
 
-        cJSON_AddStringToObject(root, "type", "memory");
-        cJSON_AddNumberToObject(root, "used_percent", used_percent);
-        cJSON_AddNumberToObject(root, "total_memory_mb", total_memory_mb);
+        cJSON_AddStringToObject(root, "Type", "memory");
+        cJSON_AddNumberToObject(root, "UsedPercent", used_percent);
+        cJSON_AddNumberToObject(root, "TotalMemoryMb", total_memory_mb);
     } 
     else if (strcmp(argv[1], "disk") == 0) {
         if (argc < 3) {
@@ -141,10 +141,10 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
 
-        cJSON_AddStringToObject(root, "type", "disk");
-        cJSON_AddStringToObject(root, "device", argv[2]);
-        cJSON_AddNumberToObject(root, "read_mbps", read_kbps);
-        cJSON_AddNumberToObject(root, "write_mbps", write_kbps);
+        cJSON_AddStringToObject(root, "Type", "disk");
+        cJSON_AddStringToObject(root, "Device", argv[2]);
+        cJSON_AddNumberToObject(root, "ReadMbps", read_kbps);
+        cJSON_AddNumberToObject(root, "WriteMbps", write_kbps);
     } 
     else {
         fprintf(stderr, "Unknown command: %s\n", argv[1]);
