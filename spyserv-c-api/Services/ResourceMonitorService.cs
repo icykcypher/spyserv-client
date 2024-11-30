@@ -1,67 +1,59 @@
-﻿using System.Diagnostics;
+﻿using Newtonsoft.Json;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace spyserv_c_api.Services
 {
     public static class ResourceMonitorService
     {
-        public static float GetCpuUsagePercentage()
+        public static CpuResultDto GetCpuUsagePercentage()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var process = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                process.NextValue();
-                Thread.Sleep(1000);
-                return process.NextValue();
+                return JsonConvert.DeserializeObject<CpuResultDto>(GetCommandOutput("./scripts/resmon", "cpu")) 
+                ?? throw new Exception("Can not deserialize resmon.");
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                return float.Parse(GetInfoFromResMonitor("resource-monitor", "cpu"));
-            }
-            else return -1;
+            else throw new NotImplementedException();
         }
 
-        public static (float, float) GetMemoryUsage()
+        public static MemoryResultDto GetMemoryUsage()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var totalMemory = new PerformanceCounter("Memory", "Commit Limit");
-                var usedMemory = new PerformanceCounter("Memory", "Committed Bytes");
-                return (usedMemory.NextValue() / totalMemory.NextValue() * 100, totalMemory.NextValue());
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                var resStr = GetInfoFromResMonitor("resource-monitor", "cpu");
-                resStr = resStr.Replace("%", "");
-                var res = resStr.Split(new[] { " of " }, StringSplitOptions.RemoveEmptyEntries);
+                var resStr = GetCommandOutput("./scripts/resmon", "cpu");
 
-                return (float.Parse(res[0]), float.Parse(res[1]));
+                return JsonConvert.DeserializeObject<MemoryResultDto>(resStr) ?? throw new Exception("Can not deserialize resmon.");
             }
-            else return (-1, -1);
+            else throw new NotImplementedException();
         }
 
-        public static (long, long, long) GetDiskUsage()
+        public static DiskResultDto GetDiskUsage()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var drive = DriveInfo.GetDrives().FirstOrDefault(d => d.IsReady);
-                if (drive != null)
-                {
-                    return ((drive.TotalSize - drive.AvailableFreeSpace) / 1024 / 1024 / 1024, drive.AvailableFreeSpace / 1024 / 1024 / 1024
-                        , drive.TotalSize / 1024 / 1024 / 1024);
-                }
-                return (0, 0, 0);
+                var device = GetMainDiskFromDf();
+                var resStr = GetCommandOutput("./scripts/resmon", $"disk {device}");
+                
+                return JsonConvert.DeserializeObject<DiskResultDto>(resStr) ?? throw new Exception("Can not deserialize resmon.");
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                var resStr = GetInfoFromResMonitor("resource-monitor", "disk");
-                var res = resStr.Split(",", StringSplitOptions.RemoveEmptyEntries);
-
-                return (long.Parse(res[0]), long.Parse(res[1]), long.Parse(res[2]));
-            }
-            else return (-1, -1, -1);
+            else throw new NotImplementedException();
         }
-        private static string GetInfoFromResMonitor(string command, string args)
+
+        public static string GetMainDiskFromDf()
+        {
+            var output = GetCommandOutput("df", "-h");
+
+            var lines = output.Split("\n").Where(line => line.Contains("/"));
+            foreach (var line in lines)
+            {
+                var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                var device = parts[0];
+                return device;
+            }
+
+            return null;
+        }
+        private static string GetCommandOutput(string command, string args)
         {
             var processInfo = new ProcessStartInfo
             {

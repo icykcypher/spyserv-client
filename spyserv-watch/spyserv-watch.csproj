@@ -6,6 +6,10 @@
     <RootNamespace>spyserv_watch</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>Link</TrimMode> 
   </PropertyGroup>
 
   <ItemGroup>

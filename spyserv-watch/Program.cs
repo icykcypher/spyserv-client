@@ -23,7 +23,7 @@ namespace spyserv_watch
 
         private static List<string> GetAppsToMonitor()
         {
-            var config = LoadConfig(@"..\..\..\..\config.json");
+            var config = LoadConfig(@"../../../../config.json");
             return config.AppsToMonitor;
         }
 
@@ -40,7 +40,7 @@ namespace spyserv_watch
 
         private static void LogStatus(string appName, string status)
         {
-            var logFilePath = Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\monitoring_log.log");
+            var logFilePath = Path.Combine(AppContext.BaseDirectory, @"../../../../monitoring_log.log");
             var logMessage = $"{DateTime.Now}: Application '{appName}' has stopped working!";
             File.AppendAllText(logFilePath, logMessage + Environment.NewLine);
             Console.WriteLine(logMessage); 

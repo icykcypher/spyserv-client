@@ -49,7 +49,7 @@ namespace spyserv
         private static void StartApiAsDetachedProcess()
         {
             var baseDirectory = AppContext.BaseDirectory;
-            var folderPath = Path.Combine(baseDirectory, @"..\..\..\..\spyserv-c-api\bin\Release\net8.0\spyserv-c-api.exe");
+            var folderPath = Path.Combine(baseDirectory, @"../../../../spyserv-c-api/bin/Release/net8.0/spyserv-c-api");
             var fullPath = Path.GetFullPath(folderPath);
 
             var processInfo = new ProcessStartInfo
@@ -124,7 +124,7 @@ namespace spyserv
 
         private static void AddAppToConfig(string appName)
         {
-            string configFilePath = Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\config.json");
+            string configFilePath = Path.Combine(AppContext.BaseDirectory, @"../../../../config.json");
 
             var config = LoadConfig(configFilePath);
 
@@ -162,7 +162,7 @@ namespace spyserv
         private static void StartWatcherAsDetachedProcess()
         {
             var baseDirectory = AppContext.BaseDirectory;
-            var folderPath = Path.Combine(baseDirectory, @"..\..\..\..\spyserv-watch\bin\Release\net8.0\spyserv-watch.exe");
+            var folderPath = Path.Combine(baseDirectory, @"../../.././spyserv-watch/bin/Release/net8.0/spyserv-watch.exe");
             var fullPath = Path.GetFullPath(folderPath);
 
             var processInfo = new ProcessStartInfo
@@ -209,7 +209,7 @@ namespace spyserv
 
         private static void RemoveAppFromConfig(string appName)
         {
-            string configFilePath = Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\config.json");
+            string configFilePath = Path.Combine(AppContext.BaseDirectory, @"../../../../config.json");
 
             var config = LoadConfig(configFilePath);
 

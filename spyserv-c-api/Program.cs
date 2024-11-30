@@ -6,14 +6,22 @@ namespace spyserv_c_api
     {
         public static void Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                Args = args,
+                EnvironmentName = Environments.Production
+            });
 
             builder.Logging.ClearProviders();
-
+           
             builder.Services.AddAuthorization();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+            .AddNewtonsoftJson(options =>
+            {
+                options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+            });
 
             builder.WebHost.ConfigureKestrel(serverOptions =>
             {
@@ -24,15 +32,20 @@ namespace spyserv_c_api
             });
 
             var app = builder.Build();
-            
+         
             var originalOut = Console.Out;
             using var suppressedOut = new StringWriter();
             Console.SetOut(suppressedOut);
 
             app.UseHttpsRedirection();
             app.UseAuthorization();
-            app.UseSwagger();
-            app.UseSwaggerUI();
+
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+            
             app.MapControllers();
             app.Run();
             Console.SetOut(originalOut);

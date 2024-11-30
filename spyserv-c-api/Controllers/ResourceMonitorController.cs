@@ -16,28 +16,21 @@ namespace spyserv_c_api.Controllers
         public IActionResult GetCpuUsage()
         {
             var cpuUsage = ResourceMonitorService.GetCpuUsagePercentage();
-            return Ok(new { CpuUsage = cpuUsage });
+            return Ok(cpuUsage);
         }
 
-        // Получить информацию о памяти
         [HttpGet("memory")]
         public IActionResult GetMemoryUsage()
         {
             var memoryUsage = ResourceMonitorService.GetMemoryUsage();
-            return Ok(new { UsedMemory = memoryUsage.Item1, TotalMemory = memoryUsage.Item2 });
+            return Ok(memoryUsage);
         }
 
-        // Получить информацию о дисках
         [HttpGet("disk")]
         public IActionResult GetDiskUsage()
         {
             var diskUsage = ResourceMonitorService.GetDiskUsage();
-            return Ok(new
-            {
-                UsedSpace = diskUsage.Item1,
-                FreeSpace = diskUsage.Item2,
-                TotalSpace = diskUsage.Item3
-            });
+            return Ok(diskUsage);
         }
     }
 }
