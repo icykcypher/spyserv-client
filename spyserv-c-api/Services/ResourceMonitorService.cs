@@ -10,8 +10,10 @@ namespace spyserv_c_api.Services
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                return JsonConvert.DeserializeObject<CpuResultDto>(GetCommandOutput("./scripts/resmon", "cpu")) 
+                var res = JsonConvert.DeserializeObject<CpuResultDto>(GetCommandOutput("./scripts/resmon", "cpu")) 
                 ?? throw new Exception("Can not deserialize resmon.");
+
+                return res;
             }
             else throw new NotImplementedException();
         }
@@ -20,9 +22,9 @@ namespace spyserv_c_api.Services
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var resStr = GetCommandOutput("./scripts/resmon", "cpu");
-
-                return JsonConvert.DeserializeObject<MemoryResultDto>(resStr) ?? throw new Exception("Can not deserialize resmon.");
+                var resStr = GetCommandOutput("./scripts/resmon", "memory");
+                var res = JsonConvert.DeserializeObject<MemoryResultDto>(resStr) ?? throw new Exception("Can not deserialize resmon.");
+                return res;
             }
             else throw new NotImplementedException();
         }
@@ -33,8 +35,8 @@ namespace spyserv_c_api.Services
             {
                 var device = GetMainDiskFromDf();
                 var resStr = GetCommandOutput("./scripts/resmon", $"disk {device}");
-                
-                return JsonConvert.DeserializeObject<DiskResultDto>(resStr) ?? throw new Exception("Can not deserialize resmon.");
+                var res =  JsonConvert.DeserializeObject<DiskResultDto>(resStr) ?? throw new Exception("Can not deserialize resmon.");
+                return res;
             }
             else throw new NotImplementedException();
         }
@@ -47,12 +49,20 @@ namespace spyserv_c_api.Services
             foreach (var line in lines)
             {
                 var parts = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                var device = parts[0];
-                return device;
+
+                if (parts.Length >= 6 && parts[5] == "/")
+                {
+                    var device = parts[0];
+                    
+                    var deviceName = device.Replace("/dev/", "");
+
+                    return deviceName;
+                }
             }
 
             return null;
         }
+
         private static string GetCommandOutput(string command, string args)
         {
             var processInfo = new ProcessStartInfo
@@ -60,10 +70,28 @@ namespace spyserv_c_api.Services
                 FileName = command,
                 Arguments = args,
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false
             };
 
-            using (var process = Process.Start(processInfo)) return process.StandardOutput.ReadToEnd();
+            try
+            {
+                using (var process = Process.Start(processInfo))
+                {
+                    var output = process.StandardOutput.ReadToEnd();
+                    var error = process.StandardError.ReadToEnd();
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        throw new Exception($"Error executing command: {error}");
+                    }
+
+                    return output;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to execute command '{command} {args}': {ex.Message}");
+            }
         }
     }
 }

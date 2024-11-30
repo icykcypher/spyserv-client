@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/statvfs.h>
+#include "cJSON.h"
 
 float get_cpu_usage() {
     FILE *fp;
@@ -103,17 +104,19 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    if (strcmp(argv[1], "cpu") == 0) 
-    {
+    cJSON *root = cJSON_CreateObject();
+
+    if (strcmp(argv[1], "cpu") == 0) {
         float usage = get_cpu_usage();
         if (usage < 0) {
             fprintf(stderr, "Error reading CPU stats\n");
             return EXIT_FAILURE;
         }
-        printf("{\"type\": \"cpu\", \"usage_percent\": %.2f}\n", usage);
+        
+        cJSON_AddStringToObject(root, "type", "cpu");
+        cJSON_AddNumberToObject(root, "usage_percent", usage);
     } 
-    else if (strcmp(argv[1], "memory") == 0) 
-    {
+    else if (strcmp(argv[1], "memory") == 0) {
         float used_percent;
         long total_memory_mb;
         get_memory_usage(&used_percent, &total_memory_mb);
@@ -121,30 +124,38 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Error reading memory stats\n");
             return EXIT_FAILURE;
         }
-        printf("{\"type\": \"memory\", \"used_percent\": %.2f, \"total_memory_mb\": %ld}\n", used_percent, total_memory_mb);
+
+        cJSON_AddStringToObject(root, "type", "memory");
+        cJSON_AddNumberToObject(root, "used_percent", used_percent);
+        cJSON_AddNumberToObject(root, "total_memory_mb", total_memory_mb);
     } 
-    else if (strcmp(argv[1], "disk") == 0) 
-    {
-        if (argc < 3) 
-        {
+    else if (strcmp(argv[1], "disk") == 0) {
+        if (argc < 3) {
             fprintf(stderr, "Usage: %s disk <device>\n", argv[0]);
             return EXIT_FAILURE;
         }
         float read_kbps, write_kbps;
         get_disk_io(argv[2], &read_kbps, &write_kbps);
-        if (read_kbps < 0 || write_kbps < 0) 
-        {
+        if (read_kbps < 0 || write_kbps < 0) {
             fprintf(stderr, "Error reading disk stats\n");
             return EXIT_FAILURE;
         }
-        printf("{\"type\": \"disk\", \"device\": \"%s\", \"read_mbps\": %.2f, \"write_mbps\": %.2f}\n", 
-                argv[2], read_kbps, write_kbps);
+
+        cJSON_AddStringToObject(root, "type", "disk");
+        cJSON_AddStringToObject(root, "device", argv[2]);
+        cJSON_AddNumberToObject(root, "read_mbps", read_kbps);
+        cJSON_AddNumberToObject(root, "write_mbps", write_kbps);
     } 
-    else 
-    {
+    else {
         fprintf(stderr, "Unknown command: %s\n", argv[1]);
         return EXIT_FAILURE;
     }
+
+    char *json_string = cJSON_Print(root);
+    printf("%s\n", json_string);
+
+    cJSON_Delete(root);
+    free(json_string);
 
     return EXIT_SUCCESS;
 }
