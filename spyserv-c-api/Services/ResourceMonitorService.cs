@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace spyserv_c_api.Services
 {

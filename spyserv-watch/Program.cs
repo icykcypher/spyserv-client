@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Serilog;
+using Newtonsoft.Json;
 using System.Diagnostics;
 
 namespace spyserv_watch
@@ -7,14 +8,20 @@ namespace spyserv_watch
     {
         static void Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, @"../../../../../logs/spyserv-watch.log"), rollingInterval: RollingInterval.Day)  // Логирование в файл
+                .CreateLogger();
+
+            Log.Information("App started. Current Directory: {Directory}", AppContext.BaseDirectory);
+
             StartMonitoring();
         }
+
         public static void StartMonitoring()
         {
-            var appNames = GetAppsToMonitor();
-
             while (true)
             {
+                var appNames = GetAppsToMonitor();
                 foreach (var appName in appNames) CheckApplicationStatus(appName);
 
                 Thread.Sleep(60000);
@@ -34,17 +41,10 @@ namespace spyserv_watch
 
             if (status == "not running")
             {
-                LogStatus(appName, status);
+                Log.Error($"Application '{appName}' has stopped working!");
             }
         }
 
-        private static void LogStatus(string appName, string status)
-        {
-            var logFilePath = Path.Combine(AppContext.BaseDirectory, @"../../../../monitoring_log.log");
-            var logMessage = $"{DateTime.Now}: Application '{appName}' has stopped working!";
-            File.AppendAllText(logFilePath, logMessage + Environment.NewLine);
-            Console.WriteLine(logMessage); 
-        }
         private static Config LoadConfig(string configFilePath)
         {
             if (File.Exists(configFilePath))
@@ -52,11 +52,13 @@ namespace spyserv_watch
                 var json = File.ReadAllText(configFilePath);
                 return JsonConvert.DeserializeObject<Config>(json);
             }
-            else return new Config { AppsToMonitor = new List<string>() };
+            else
+                return new Config { AppsToMonitor = new List<string>() };
         }
     }
+
     public class Config
     {
-        public List<string> AppsToMonitor { get; set; } = [];
+        public List<string> AppsToMonitor { get; set; } = new List<string>();
     }
 }
