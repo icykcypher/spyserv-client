@@ -9,7 +9,8 @@ namespace spyserv_watch
         static void Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, @"../../../../../logs/spyserv-watch.log"), rollingInterval: RollingInterval.Day)  // Логирование в файл
+                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, @"../../../../../logs/spyserv-watch.log"), 
+                rollingInterval: RollingInterval.Day)
                 .CreateLogger();
 
             Log.Information("App started. Current Directory: {Directory}", AppContext.BaseDirectory);
@@ -30,14 +31,14 @@ namespace spyserv_watch
 
         private static List<string> GetAppsToMonitor()
         {
-            var config = LoadConfig(@"../../../../config.json");
+            var config = LoadConfig(@"../../../config.json");
             return config.AppsToMonitor;
         }
 
         private static void CheckApplicationStatus(string appName)
         {
             var processes = Process.GetProcessesByName(appName);
-            string status = processes.Length > 0 ? "running" : "not running";
+            var status = processes.Length > 0 ? "running" : "not running";
 
             if (status == "not running")
             {
@@ -52,13 +53,12 @@ namespace spyserv_watch
                 var json = File.ReadAllText(configFilePath);
                 return JsonConvert.DeserializeObject<Config>(json);
             }
-            else
-                return new Config { AppsToMonitor = new List<string>() };
+            else return new Config { AppsToMonitor = []};
         }
     }
 
     public class Config
     {
-        public List<string> AppsToMonitor { get; set; } = new List<string>();
+        public List<string> AppsToMonitor { get; set; } = [];
     }
 }

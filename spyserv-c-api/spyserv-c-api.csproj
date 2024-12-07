@@ -20,4 +20,8 @@
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\spyserv-client\spyserv.csproj" />
+  </ItemGroup>
+
 </Project>

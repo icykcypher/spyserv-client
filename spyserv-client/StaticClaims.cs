@@ -5,5 +5,7 @@
         public static string ApiProcessName => "spyserv-c-api";
 
         public static string SpyProcessName => "spyserv-watch";
+
+        public static string PathToConfig => "";
     }
 }

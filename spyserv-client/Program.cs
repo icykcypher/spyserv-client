@@ -8,42 +8,54 @@ namespace spyserv
     {
         static void Main(string[] args)
         {
-            if (args is null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
+            try
             {
-                Console.WriteLine("Unknown command");
-                return;
+                if (args is null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
+                {
+                    Console.WriteLine("spyserv: Unknown command");
+                    return;
+                }
+                switch (args[0].ToLower())
+                {
+                    case "start":
+                        StartApiAsDetachedProcess();
+                        StartWatcherAsDetachedProcess();
+                        break;
+
+                    case "status":
+                        ShowStatus();
+                        break;
+
+                    case "help":
+                        ShowCommands();
+                        break;
+
+                    case "stop":
+                        StopApi();
+                        StopSpy();
+                        break;
+
+                    case "track":
+                        TrackApplication(args);
+                        break;
+
+                    case "untrack":
+                        UntrackApplication(args[1]);
+                        break;
+
+                    case "config":
+                    // TODO 
+                    // Implement
+                        throw new NotImplementedException();
+                        break;
+                    default:
+                        Console.WriteLine($"spyserv: Unknown command: {args[0]}");
+                        break;
+                }
             }
-
-            switch (args[0].ToLower())
+            catch (System.Exception e)
             {
-                case "start":
-                    StartApiAsDetachedProcess();
-                    StartWatcherAsDetachedProcess();
-                    break;
-
-                case "status":
-                    ShowStatus();
-                    break;
-
-                case "help":
-                    ShowCommands();
-                    break;
-
-                case "stop":
-                    StopApi();
-                    StopSpy();
-                    break;
-
-                case "track":
-                    ConfigureApplication(args);
-                    break;
-
-                case "untrack":
-                    RemoveAppFromConfig(args[1]);
-                    break;
-                default:
-                    Console.WriteLine($"Unknown command: {args[0]}");
-                    break;
+                System.Console.WriteLine($"spyserv: {e.Message}");
             }
         }
         private static void StartApiAsDetachedProcess()
@@ -67,7 +79,7 @@ namespace spyserv
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to start API: {ex.Message}");
+                Console.WriteLine($"spyserv: Failed to start API: {ex.Message}");
             }
         }
 
@@ -81,7 +93,7 @@ namespace spyserv
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error while trying to kill process: {ex.Message}");
+                Console.WriteLine($"spyserv: Error while trying to kill process: {ex.Message}");
             }
         }
 
@@ -95,14 +107,14 @@ namespace spyserv
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error while trying to kill process: {ex.Message}");
+                Console.WriteLine($"spyserv: Error while trying to kill process: {ex.Message}");
             }
         }
 
         private static void ShowCommands()
         {
-            Console.WriteLine("Available commands:");
-            Console.WriteLine("  start              - Start the web application");
+            Console.WriteLine("spyserv: Available commands:");
+            Console.WriteLine("  start              - Start the web api and system watcher applications");
             Console.WriteLine("  status             - Show application status");
             Console.WriteLine("  help               - Show available commands");
             Console.WriteLine("  track [app-name]   - Adding application to monitored apps");
@@ -110,16 +122,10 @@ namespace spyserv
             Console.WriteLine("  stop               - Stop application");
         }
 
-        private static void ConfigureApplication(string[] args)
+        private static void TrackApplication(string[] args)
         {
-            if (args.Length > 1)
-            {
-                AddAppToConfig(args[1]);
-            }
-            else
-            {
-                Console.WriteLine("Invalid arguments for configure.");
-            }
+            if (args.Length > 1) AddAppToConfig(args[1]);
+            else Console.WriteLine("spyserv: Invalid arguments for configure.");
         }
 
         private static void AddAppToConfig(string appName)
@@ -128,16 +134,17 @@ namespace spyserv
 
             var config = LoadConfig(configFilePath);
 
-            if (!config.AppsToMonitor.Contains(appName))
+            if(Process.GetProcessesByName(appName).Length <= 0)
+                Console.WriteLine($"spyserv: Application '{appName}' was not found. Try to restart application.");
+
+            else if (!config.AppsToMonitor.Contains(appName))
             {
                 config.AppsToMonitor.Add(appName);
                 SaveConfig(configFilePath, config);
-                Console.WriteLine($"Application '{appName}' added to the config.");
+                Console.WriteLine($"spyserv: Application '{appName}' added to the config.");
             }
             else
-            {
-                Console.WriteLine($"Application '{appName}' is already in the config.");
-            }
+                Console.WriteLine($"spyserv: Application '{appName}' is already in the config.");
         }
 
         private static Config LoadConfig(string configFilePath)
@@ -180,7 +187,7 @@ namespace spyserv
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to start watcher: {ex.Message}");
+                Console.WriteLine($"spyserv: Failed to start watcher: {ex.Message}");
             }
         }
 
@@ -193,7 +200,7 @@ namespace spyserv
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error while checking process '{processName}': {ex.Message}");
+                Console.WriteLine($"spyserv: Error while checking process '{processName}': {ex.Message}");
                 return false;
             }
         }
@@ -203,11 +210,11 @@ namespace spyserv
             bool isSpyservApiRunning = IsProcessRunning(StaticClaims.ApiProcessName);
             bool isSpyservWatchRunning = IsProcessRunning(StaticClaims.SpyProcessName);
 
-            if (!isSpyservApiRunning && !isSpyservWatchRunning) Console.WriteLine("SpyServ is not running.");
-            else if (isSpyservApiRunning && isSpyservWatchRunning) Console.WriteLine("SpyServ is running.");
+            if (!isSpyservApiRunning && !isSpyservWatchRunning) Console.WriteLine("spyserv: SpyServ is not running.");
+            else if (isSpyservApiRunning && isSpyservWatchRunning) Console.WriteLine("spyserv: SpyServ is running.");
         }
 
-        private static void RemoveAppFromConfig(string appName)
+        private static void UntrackApplication(string appName)
         {
             string configFilePath = Path.Combine(AppContext.BaseDirectory, @"../../../../config.json");
 
@@ -217,11 +224,11 @@ namespace spyserv
             {
                 config.AppsToMonitor.Remove(appName);
                 SaveConfig(configFilePath, config);
-                Console.WriteLine($"Application '{appName}' removed from the config.");
+                Console.WriteLine($"spyserv: Application '{appName}' removed from the config.");
             }
             else
             {
-                Console.WriteLine($"Application '{appName}' is not found in the config.");
+                Console.WriteLine($"spyserv: Application '{appName}' is not found in the config.");
             }
         }
 
