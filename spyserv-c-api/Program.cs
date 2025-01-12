@@ -1,3 +1,4 @@
+using System.Net;
 using Serilog;
 using spyserv_c_api.Services;
 
@@ -23,12 +24,16 @@ namespace spyserv_c_api
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
             });
 
-
             builder.WebHost.ConfigureKestrel(serverOptions =>
             {
                 serverOptions.ConfigureHttpsDefaults(httpsOptions =>
                 {
                     httpsOptions.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+                });
+
+                serverOptions.Listen(IPAddress.Any, 443, listenOptions =>
+                {
+                    listenOptions.UseHttps("certs/cert.pfx", "masic-broskev");
                 });
             });
 

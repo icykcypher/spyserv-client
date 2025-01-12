@@ -9,7 +9,7 @@ namespace spyserv_watch
         static void Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, @"../../../../../logs/spyserv-watch.log"), 
+                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, @"../logs/spyserv-watch.log"), 
                 rollingInterval: RollingInterval.Day)
                 .CreateLogger();
 
@@ -31,7 +31,7 @@ namespace spyserv_watch
 
         private static List<string> GetAppsToMonitor()
         {
-            var config = LoadConfig(@"../../../config.json");
+            var config = LoadConfig(@"../../share/config.json");
             return config.AppsToMonitor;
         }
 
@@ -59,6 +59,24 @@ namespace spyserv_watch
 
     public class Config
     {
+        public DebugConfig? Debug { get; set; }
+        public ReleaseConfig? Release { get; set; }
         public List<string> AppsToMonitor { get; set; } = [];
+    }
+
+    public class DebugConfig
+    {
+        public Pathes? Pathes { get; set; }
+    }
+
+    public class ReleaseConfig
+    {
+        public Pathes? Pathes { get; set; } 
+    }
+
+    public class Pathes
+    {
+        public string SpyservApi { get; set; } = string.Empty;
+        public string SpyservWatcher { get; set; } = string.Empty;
     }
 }

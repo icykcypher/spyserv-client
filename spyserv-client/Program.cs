@@ -136,12 +136,13 @@ namespace spyserv
         private static void StartApiAsDetachedProcess()
         {
             var baseDirectory = AppContext.BaseDirectory;
-            var folderPath = Path.Combine(baseDirectory, @"../../../../spyserv-c-api/bin/Release/net8.0/spyserv-c-api");
+            var folderPath = Path.Combine(baseDirectory, @"../spyserv-c-api/spyserv-c-api");
             var fullPath = Path.GetFullPath(folderPath);
 
             if (!File.Exists(fullPath))
             {
                 Console.WriteLine($"spyserv start: API binary was not found at {fullPath}");
+                return;
             }
 
             var processInfo = new ProcessStartInfo
@@ -227,21 +228,19 @@ namespace spyserv
 
         private static void AddAppToConfig(string appName)
         {
-            string configFilePath = Path.Combine(AppContext.BaseDirectory, @"../../../../config.json");
+            string configFilePath = Path.Combine(AppContext.BaseDirectory, @"../../share/config.json");
+            Config config;
 
-            var config = LoadConfig(configFilePath);
-
-            if(Process.GetProcessesByName(appName).Length <= 0)
-                Console.WriteLine($"spyserv track: Application '{appName}' was not found. Try to restart application.");
-
-            else if (!config.AppsToMonitor.Contains(appName))
+            if (File.Exists(configFilePath))
             {
-                config.AppsToMonitor.Add(appName);
-                SaveConfig(configFilePath, config);
-                Console.WriteLine($"spyserv track: Application '{appName}' added to the config.");
+                var json = File.ReadAllText(configFilePath);
+                config = JsonConvert.DeserializeObject<Config>(json) ?? new Config();
             }
-            else
-                Console.WriteLine($"spyserv track: Application '{appName}' is already in the config.");
+            else config = new Config();
+
+            if (!config.AppsToMonitor.Contains(appName)) config.AppsToMonitor.Add(appName);
+
+            SaveConfig(configFilePath, config);
         }
 
         private static Config LoadConfig(string configFilePath)
@@ -253,7 +252,7 @@ namespace spyserv
             }
             else
             {
-                return new Config { AppsToMonitor = [] };
+                return new Config();
             }
         }
 
@@ -266,7 +265,7 @@ namespace spyserv
         private static void StartWatcherAsDetachedProcess()
         {
             var baseDirectory = AppContext.BaseDirectory;
-            var folderPath = Path.Combine(baseDirectory, @"../../.././spyserv-watch/bin/Release/net8.0/spyserv-watch.exe");
+            var folderPath = Path.Combine(baseDirectory, @"../spyserv-watch/spyserv-watch");
             var fullPath = Path.GetFullPath(folderPath);
 
             if (!File.Exists(fullPath))
@@ -326,7 +325,7 @@ namespace spyserv
         /// <param name="appName">Application name</param>
         private static void UntrackApplication(string appName)
         {
-            var configFilePath = Path.Combine(AppContext.BaseDirectory, @"../../../../config.json");
+            var configFilePath = Path.Combine(AppContext.BaseDirectory, @"../../share/config.json");
 
             var config = LoadConfig(configFilePath);
 
@@ -344,10 +343,28 @@ namespace spyserv
     }
 
     /// <summary>
-    /// Class representing config.json
+    /// Classes representing config.json
     /// </summary>
     public class Config
     {
+        public DebugConfig Debug { get; set; }
+        public ReleaseConfig Release { get; set; }
         public List<string> AppsToMonitor { get; set; } = [];
+    }
+
+    public class DebugConfig
+    {
+        public Pathes Pathes { get; set; }
+    }
+
+    public class ReleaseConfig
+    {
+        public Pathes Pathes { get; set; } 
+    }
+
+    public class Pathes
+    {
+        public string SpyservApi { get; set; } = "";
+        public string SpyservWatcher { get; set; } = "";
     }
 }
