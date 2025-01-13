@@ -223,12 +223,12 @@ namespace spyserv
         private static void TrackApplication(string appName)
         {
             if (!String.IsNullOrWhiteSpace(appName)) AddAppToConfig(appName);
-            else Console.WriteLine("spyserv track: Invalid arguments for configure.");
+            else Console.WriteLine("spyserv track: Invalid arguments for configuring.");
         }
 
         private static void AddAppToConfig(string appName)
         {
-            string configFilePath = Path.Combine(AppContext.BaseDirectory, @"../../share/config.json");
+            var configFilePath = Path.Combine(AppContext.BaseDirectory, @"../../share/config.json");
             Config config;
 
             if (File.Exists(configFilePath))
@@ -238,7 +238,20 @@ namespace spyserv
             }
             else config = new Config();
 
-            if (!config.AppsToMonitor.Contains(appName)) config.AppsToMonitor.Add(appName);
+            config.Debug ??= new DebugConfig();
+            config.Release ??= new ReleaseConfig();
+            config.Debug.Pathes ??= new Pathes
+            {
+                SpyservApi = config.Debug.Pathes.SpyservApi ?? "../",
+                SpyservWatcher = config.Debug.Pathes.SpyservWatcher ?? "../"
+            };
+            config.Release.Pathes ??= new Pathes
+            {
+                SpyservApi = config.Release.Pathes.SpyservApi ?? "../",
+                SpyservWatcher = config.Release.Pathes.SpyservWatcher ?? "../"
+            };
+
+            if (!config.MonitoredApps.Contains(appName)) config.MonitoredApps.Add(appName);
 
             SaveConfig(configFilePath, config);
         }
@@ -329,9 +342,9 @@ namespace spyserv
 
             var config = LoadConfig(configFilePath);
 
-            if (config.AppsToMonitor.Contains(appName))
+            if (config.MonitoredApps.Contains(appName))
             {
-                config.AppsToMonitor.Remove(appName);
+                config.MonitoredApps.Remove(appName);
                 SaveConfig(configFilePath, config);
                 Console.WriteLine($"spyserv untrack: Application '{appName}' removed from the config.");
             }
@@ -347,24 +360,24 @@ namespace spyserv
     /// </summary>
     public class Config
     {
-        public DebugConfig Debug { get; set; }
-        public ReleaseConfig Release { get; set; }
-        public List<string> AppsToMonitor { get; set; } = [];
+        public DebugConfig? Debug { get; set; }
+        public ReleaseConfig? Release { get; set; }
+        public List<string> MonitoredApps { get; set; } = [];
     }
 
     public class DebugConfig
     {
-        public Pathes Pathes { get; set; }
+        public Pathes? Pathes { get; set; }
     }
 
     public class ReleaseConfig
     {
-        public Pathes Pathes { get; set; } 
+        public Pathes? Pathes { get; set; }
     }
 
     public class Pathes
     {
-        public string SpyservApi { get; set; } = "";
-        public string SpyservWatcher { get; set; } = "";
+        public string SpyservApi { get; set; } = string.Empty;
+        public string SpyservWatcher { get; set; } = string.Empty;
     }
 }
