@@ -1,4 +1,4 @@
-﻿namespace spyserv_client
+﻿namespace spyserv
 {
     public static class StaticClaims
     {

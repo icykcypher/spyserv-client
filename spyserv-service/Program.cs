@@ -1,21 +1,22 @@
 ﻿using Serilog;
-using Newtonsoft.Json;
-using System.Diagnostics;
+using spyserv_services.Services;
 
-namespace spyserv_watch
+namespace spyserv_services
 {
     public class Program
     {
         static void Main(string[] args)
         {
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.File(Path.Combine(AppContext.BaseDirectory, @"../logs/spyserv-watch.log"), 
+                .WriteTo.File(
+                Path.Combine(AppContext.BaseDirectory, @"../logs/spyserv-watch.log"),
                 rollingInterval: RollingInterval.Day)
                 .CreateLogger();
 
             Log.Information("App started. Current Directory: {Directory}", AppContext.BaseDirectory);
+            var monitoringService = new MonitoringService();
 
-            StartMonitoring();
+            monitoringService.StartMonitoring();
         }
     }
 }
