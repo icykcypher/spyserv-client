@@ -1,7 +1,7 @@
 ﻿using Serilog;
-using spyserv_services.Services;
+using spyserv_service.Services;
 
-namespace spyserv_services
+namespace spyserv_service
 {
     public class Program
     {
