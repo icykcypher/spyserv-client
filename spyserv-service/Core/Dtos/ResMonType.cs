@@ -1,6 +1,9 @@
-public enum ResMonType
+namespace spyserv_services.Core.Dtos
 {
-    Cpu,
-    Memory,
-    Disk
+    public enum ResMonType
+    {
+        Cpu,
+        Memory,
+        Disk
+    }
 }

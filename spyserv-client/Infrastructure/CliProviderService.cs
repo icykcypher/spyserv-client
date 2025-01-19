@@ -309,7 +309,7 @@ namespace spyserv.Infastructure
         private static void StartServices()
         {
             var baseDirectory = AppContext.BaseDirectory;
-            var folderPath = Path.Combine(baseDirectory, @"../spyserv-service/spyserv-services");
+            var folderPath = Path.Combine(baseDirectory, @"../spyserv-services/spyserv-services");
             var fullPath = Path.GetFullPath(folderPath);
 
             if (!File.Exists(fullPath))
@@ -357,8 +357,8 @@ namespace spyserv.Infastructure
         {
             var isSpyservServicesRunning = IsProcessRunning(StaticClaims.SpyservServiceProcessName);
 
-            if (isSpyservServicesRunning) Console.WriteLine("spyserv status: SpyServ is not running.");
-            else if (isSpyservServicesRunning) Console.WriteLine("spyserv status: SpyServ is running.");
+            if (!isSpyservServicesRunning) Console.WriteLine("spyserv status: SpyServ is not running.");
+            else Console.WriteLine("spyserv status: SpyServ is running.");
         }
 
 

@@ -1,6 +1,9 @@
-public class MemoryResultDto
+namespace spyserv_services.Core.Dtos
 {
-    public string Type { get; } = ResMonType.Memory.ToString();
-    public double UsedPercent { get; set; }
-    public double TotalMemoryMb { get; set; }
+    public class MemoryResultDto
+    {
+        public string Type { get; } = ResMonType.Memory.ToString();
+        public double UsedPercent { get; set; }
+        public double TotalMemoryMb { get; set; }
+    }
 }

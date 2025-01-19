@@ -1,10 +1,14 @@
 ﻿namespace spyserv_services.Core.Dtos
 {
+    /// <summary>
+    /// Classes representing config.json
+    /// </summary>
     public class Config
     {
         public DebugConfig? Debug { get; set; }
         public ReleaseConfig? Release { get; set; }
-        public List<MonitoredApp> AppsToMonitor { get; set; } = [];
+        public List<MonitoredApp> MonitoredApps { get; set; } = [];
+        public User? User;        
     }
 
     public class DebugConfig

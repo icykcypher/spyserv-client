@@ -1,8 +1,9 @@
 ﻿using Newtonsoft.Json;
 using System.Diagnostics;
+using spyserv_services.Core.Dtos;
 using System.Runtime.InteropServices;
 
-namespace spyserv_c_api.Services
+namespace spyserv_services.Services
 {
     public static class ResourceMonitorService
     {
@@ -10,7 +11,7 @@ namespace spyserv_c_api.Services
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var command = GetCommandOutput("./scripts/resmon", "cpu");
+                var command = GetCommandOutput("./src/resmon", "cpu");
                 return JsonConvert.DeserializeObject<CpuResultDto>(command) ?? throw new Exception("Cannot deserialize resmon.");
             }
             else throw new NotImplementedException();
@@ -20,7 +21,7 @@ namespace spyserv_c_api.Services
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var resStr = GetCommandOutput("./scripts/resmon", "memory");
+                var resStr = GetCommandOutput("./src/resmon", "memory");
                 return JsonConvert.DeserializeObject<MemoryResultDto>(resStr) ?? throw new Exception("Cannot deserialize resmon.");
             }
             else throw new NotImplementedException();
@@ -31,7 +32,7 @@ namespace spyserv_c_api.Services
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 var device = GetMainDiskFromDf();
-                var resStr = GetCommandOutput("./scripts/resmon", $"disk {device}");
+                var resStr = GetCommandOutput("./src/resmon", $"disk {device}");
                 return JsonConvert.DeserializeObject<DiskResultDto>(resStr) ?? throw new Exception("Cannot deserialize resmon.");
             }
             else throw new NotImplementedException();

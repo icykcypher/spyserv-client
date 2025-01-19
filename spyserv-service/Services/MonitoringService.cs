@@ -2,63 +2,80 @@
 using Newtonsoft.Json;
 using System.Diagnostics;
 using spyserv_services.Core.Dtos;
-using spyserv_c_api.Services;
 
 namespace spyserv_services.Services
 {
     public class MonitoringService
     {
-        public void StartMonitoring()
+        private readonly Timer _checkingTimer;
+        private List<MonitoredApp> _monitoredApps;
+        private readonly Dictionary<string, DateTime> _lastCheckTimes;
+        private readonly CommunicationService _communicationService;
+
+        public MonitoringService(CommunicationService communicationService)
         {
-            while (true)
+            _monitoredApps = GetMonitoredApps();
+            _lastCheckTimes = _monitoredApps.ToDictionary(app => app.Name, _ => DateTime.MinValue);
+
+            _checkingTimer = new Timer(MonitorApps, null, 0, 1000);
+            _communicationService = communicationService;
+        }
+
+        public void MonitorApps(object? state)
+        {
+            Log.Information("Started monitoring");
+            foreach (var app in _monitoredApps)
             {
-                var apps = GetAppsToMonitor();
-                foreach (var app in apps)
+                if ((DateTime.Now - _lastCheckTimes[app.Name]).TotalSeconds >= app.CheckingIntervalInSec)
                 {
-                    CheckApplicationStatus(app);
+                     CheckApplicationStatus(app);
+                    _lastCheckTimes[app.Name] = DateTime.Now;
                 }
-
-                LogResourceUsage();
-
-                Thread.Sleep(60000);
             }
+
+            Task.Run(() => _communicationService.SendMonitoringData(GetResourceUsage()));
         }
 
-        private static List<MonitoredApp> GetAppsToMonitor()
+        private List<MonitoredApp> GetMonitoredApps()
         {
-            var config = LoadConfig(@"../../share/config.json");
-            return config.AppsToMonitor;
+            var config = LoadConfig(StaticClaims.PathToConfig);
+            return config.MonitoredApps;
         }
 
-        private static void CheckApplicationStatus(MonitoredApp app)
+        private async Task CheckApplicationStatus(MonitoredApp app)
         {
-            var processes = Process.GetProcessesByName(app.Name);
-            var isRunning = processes.Length > 0;
-
-            if (!isRunning)
+            Log.Information($"Checking {app.Name}");
+            // TODO
+            // Add restarting application after restart delay
+            if (!IsAppRunning(app.Name))
             {
-                Log.Error($"Application '{app.Name}' has stopped working!");
-
-                if (app.AutoRestart) RestartApplication(app);
+                app.IsRunning = false;
+                
+                if (app.AutoRestart)
+                {
+                    await Task.Run(() => RestartApplication(app));
+                }
+                if (!app.NoNotify)
+                {
+                    await Task.Run(() => _communicationService.NotifyNotWorkingApp(app));
+                }
             }
             else
             {
-                Log.Information($"Application '{app.Name}' is running.");
+                app.IsRunning = true;
             }
-
-            app.IsRunning = isRunning;
         }
 
-        private static void RestartApplication(MonitoredApp app)
+        private void RestartApplication(MonitoredApp app)
         {
             try
             {
-                if (!string.IsNullOrWhiteSpace(app.PathToLogs))
+                if (!string.IsNullOrWhiteSpace(app.Name))
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = app.PathToLogs,
-                        UseShellExecute = true
+                        FileName = app.Name,
+                        UseShellExecute = false 
                     });
                     Log.Information($"Application '{app.Name}' restarted successfully.");
                 }
@@ -73,33 +90,36 @@ namespace spyserv_services.Services
             }
         }
 
-        private static void LogResourceUsage()
+        private bool IsAppRunning(string appName) =>  Process.GetProcessesByName(appName).Any();
+
+        private MonitoringData GetResourceUsage()
         {
             try
             {
                 var cpuUsage = ResourceMonitorService.GetCpuUsagePercentage();
-                Log.Information($"CPU Usage: {cpuUsage.UsagePercent}%");
 
                 var memoryUsage = ResourceMonitorService.GetMemoryUsage();
-                Log.Information($"Memory Usage: {memoryUsage.TotalMemoryMb * memoryUsage.UsedPercent / 100}MB / {memoryUsage.TotalMemoryMb}MB");
 
                 var diskUsage = ResourceMonitorService.GetDiskUsage();
-                Log.Information($"Disk Usage: Read {diskUsage.ReadMbps}Mbps, Write {diskUsage.WriteMbps}Mbps");
+
+                return new MonitoringData { CpuResult = cpuUsage, MemoryResult = memoryUsage, DiskResult = diskUsage };
             }
             catch (Exception ex)
             {
                 Log.Error($"Error retrieving system resource usage: {ex.Message}");
             }
+            Log.Error("Error retrieving system resource usage");
+            throw new Exception("Error retrieving system resource usage");
         }
 
-        private static Config LoadConfig(string configFilePath)
+        private Config LoadConfig(string configFilePath)
         {
             if (File.Exists(configFilePath))
             {
                 var json = File.ReadAllText(configFilePath);
                 return JsonConvert.DeserializeObject<Config>(json) ?? new Config();
             }
-            else return new Config { AppsToMonitor = new List<MonitoredApp>() };
+            else return new Config { MonitoredApps = new List<MonitoredApp>() };
         }
     }
 }
