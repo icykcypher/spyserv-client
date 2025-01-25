@@ -7,7 +7,7 @@ namespace spyserv.Core
     {
         public DebugConfig? Debug { get; set; }
         public ReleaseConfig? Release { get; set; }
-        public List<MonitoredApp> MonitoredApps { get; set; } = [];
+        public List<MonitoredApp>? MonitoredApps { get; set; } = [];
         public User? User;
     }
 

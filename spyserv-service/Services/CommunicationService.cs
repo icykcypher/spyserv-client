@@ -1,8 +1,8 @@
 ﻿using Serilog;
 using System.Text;
-using spyserv.Core;
 using Newtonsoft.Json;
 using spyserv_services.Core.Dtos;
+using spyserv.Core;
 
 namespace spyserv_services.Services
 {

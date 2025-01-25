@@ -4,7 +4,7 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
-namespace spyserv.Infastructure
+namespace spyserv.Infrastructure
 {
     public static class CliProviderService 
     {
@@ -77,8 +77,8 @@ namespace spyserv.Infastructure
             trackNoNotify.AddAlias("-n");
             track.AddOption(trackNoNotify);
 
-            track.SetHandler(async (string appName, string logs, string description, bool restart, 
-            int checkingInterval, int restartDelay, bool noNotify) =>
+            track.SetHandler(async (appName, logs, description, restart, 
+checkingInterval, restartDelay, noNotify) =>
             {
                 var app = new MonitoredApp
                 {
@@ -279,10 +279,10 @@ namespace spyserv.Infastructure
             };
             config.User ??= new User
             {
-                Name = config.User?.Name ?? "unknown",
-                Email = config.User?.Email ?? "uknown"
+                Name = config.User?.Name ?? "null",
+                Email = config.User?.Email ?? "null"
             };
-            
+
             return config;
         }
 
@@ -302,8 +302,17 @@ namespace spyserv.Infastructure
 
         private static void SaveConfig(string configFilePath, Config config)
         {
-            var json = JsonConvert.SerializeObject(config, Newtonsoft.Json.Formatting.Indented);
-            File.WriteAllText(configFilePath, json);
+            if (File.Exists(configFilePath))
+            {
+                var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                File.WriteAllText(configFilePath, json);
+            }
+            else 
+            {
+                Directory.CreateDirectory("../src/");
+                var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                File.WriteAllText(configFilePath, json);
+            }
         }
 
         private static void StartServices()

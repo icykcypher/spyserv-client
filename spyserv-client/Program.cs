@@ -1,4 +1,4 @@
-﻿using spyserv.Infastructure;
+﻿using spyserv.Infrastructure;
 
 namespace spyserv
 {
