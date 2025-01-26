@@ -7,8 +7,8 @@ namespace spyserv_services
     {
         static void Main(string[] args)
         {
-            if (!File.Exists($"{Path.Combine(AppContext.BaseDirectory, @"../logs/spyserv-services.log")}"))
-                Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, @"../logs/spyserv-services.log"));
+            if (!File.Exists($"{Path.Combine(AppContext.BaseDirectory, @"../logs/")}"))
+                Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, @"../logs/"));
 
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.File(

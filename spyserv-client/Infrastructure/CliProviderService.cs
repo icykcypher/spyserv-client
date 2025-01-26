@@ -62,7 +62,7 @@ namespace spyserv.Infrastructure
 
             trackRestart.AddValidator(result =>
             {
-                if (result.GetValueOrDefault<bool>() && result.Parent.GetValueForOption<string>(executablePath) == "--exec-path") 
+                if (result.GetValueOrDefault<bool>() && result.Parent.GetValueForOption<string>(executablePath) != "--exec-path") 
                 {
                     result.ErrorMessage = "The --exec-path option is required when using --restart.";
                 }
