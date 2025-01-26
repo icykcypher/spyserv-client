@@ -3,7 +3,7 @@ namespace spyserv.Core
     public class MonitoredApp
     {
         public string Name { get; set; } = string.Empty;
-        //public string PathToBin { get; set; } = string.Empty;
+        public string PathToBin { get; set; } = string.Empty;
         public string PathToLogs { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public bool IsRunning { get; set; } = true;

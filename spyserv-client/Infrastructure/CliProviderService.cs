@@ -8,6 +8,7 @@ namespace spyserv.Infrastructure
 {
     public static class CliProviderService 
     {
+        private static readonly object FileLock = new object();
         public static void ConfigureCommands(string[] args)
         {
             var rootCommand = new RootCommand("SpyServ CLI - Manage and monitor your system and applications");
@@ -16,7 +17,7 @@ namespace spyserv.Infrastructure
             start.SetHandler(StartServices);
             rootCommand.AddCommand(start);
 
-            var stop = new Command("stop", "Stop all running services");
+            var stop = new Command("stop", "Stop the system monitoring tools");
             stop.SetHandler(StopServices);
             rootCommand.AddCommand(stop);
 
@@ -24,6 +25,7 @@ namespace spyserv.Infrastructure
             status.SetHandler(ShowStatus);
             rootCommand.AddCommand(status);
 
+            // TRACK START
             var track = new Command("track", "Add the specified application to the monitoring list");
 
             var trackArgument = new Argument<string>("appName", "Name of the application to monitor");
@@ -51,14 +53,29 @@ namespace spyserv.Infrastructure
                 description: "Enable auto-restart if the application stops"
             );
             trackRestart.AddAlias("-r");
+            var executablePath = new Option<string>(
+                name: "--exec-path",
+                description: "Path to the executable file",
+                getDefaultValue: () => ""
+            );
+            executablePath.AddAlias("-e");
+
+            trackRestart.AddValidator(result =>
+            {
+                if (result.GetValueOrDefault<bool>() && result.Parent.GetValueForOption<string>(executablePath) == "--exec-path") 
+                {
+                    result.ErrorMessage = "The --exec-path option is required when using --restart.";
+                }
+            });
             track.AddOption(trackRestart);
+            track.AddOption(executablePath);
 
             var trackCheckingInterval = new Option<int>(
                 name: "--checking-interval",
                 getDefaultValue: () => 60,
                 description: "Set the interval in seconds for checking the application status"
             );
-            trackCheckingInterval.AddAlias("-i");
+            trackCheckingInterval.AddAlias("-ci");
             track.AddOption(trackCheckingInterval);
 
             var trackRestartDelay = new Option<int>(
@@ -72,17 +89,18 @@ namespace spyserv.Infrastructure
             var trackNoNotify = new Option<bool>(
                 name: "--no-notify",
                 getDefaultValue: () => false,
-                description: "Disable notifications"
+                description: "Disable notifications for application"
             );
             trackNoNotify.AddAlias("-n");
             track.AddOption(trackNoNotify);
 
             track.SetHandler(async (appName, logs, description, restart, 
-checkingInterval, restartDelay, noNotify) =>
+                        checkingInterval, restartDelay, noNotify, execPath) =>
             {
                 var app = new MonitoredApp
                 {
                     Name = appName,
+                    PathToBin = execPath,
                     PathToLogs = logs,
                     Description = description,
                     IsRunning = true,
@@ -91,8 +109,10 @@ checkingInterval, restartDelay, noNotify) =>
                     RestartDelay = restartDelay,
                     NoNotify = noNotify
                 };
+
                 await TrackApplication(app);
                 Console.WriteLine($"Tracking application: {app.Name}");
+                Console.WriteLine($"Path to exectable file: {execPath}");
                 Console.WriteLine($"Logs Path: {app.PathToLogs}");
                 Console.WriteLine($"Description: {app.Description}");
                 Console.WriteLine($"Auto Restart: {app.AutoRestart}");
@@ -108,11 +128,13 @@ checkingInterval, restartDelay, noNotify) =>
             trackRestart,
             trackCheckingInterval,
             trackRestartDelay,
-            trackNoNotify
+            trackNoNotify,
+            executablePath
             );
 
             rootCommand.AddCommand(track);
-
+            // TRACK END
+            // UNTRACK START
             var untrack = new Command("untrack", "Remove the specified application from the monitoring list");
             var untrackArgument = new Argument<string>("appName", "Name of the application to untrack");
             untrack.AddArgument(untrackArgument);
@@ -123,17 +145,18 @@ checkingInterval, restartDelay, noNotify) =>
                 untrackArgument
             );
             rootCommand.AddCommand(untrack);
-
-            var config = new Command("config", "Set user configuration values");
+            // UNTRACK END
+            // CONFIG START
+            var config = new Command("config", "Set configuration values");
             var configCommandUserName = new Command("user.name", "Set user's name");
             var configCommandUserEmail = new Command("user.email", "Set user's email'");
-
-            config.Add(configCommandUserEmail);
-            config.Add(configCommandUserName);
+            var configCommandApp = new Command("app", "Configure application settings");
+            var configCommandResMon = new Command("resmon", "Configure resource monitoring settings");
             
             var configArgumentName = new Argument<string>("user-name", "Value for the specified user's name");
             configCommandUserName.AddArgument(configArgumentName);
-
+            config.Add(configCommandUserName);
+            
             var configArgumentEmail= new Argument<string>("user-email", "Value for the specified user's email");
             configCommandUserEmail.AddArgument(configArgumentEmail);
             configCommandUserName.SetHandler
@@ -147,8 +170,166 @@ checkingInterval, restartDelay, noNotify) =>
                 ConfigureUserEmail,
                 configArgumentEmail
             );
-            rootCommand.AddCommand(config);
+            config.Add(configCommandUserEmail);
 
+            var checkApplicationsStatus = new Option<bool>(
+                name: "--monitor-apps",
+                description: "Enable or disable monitoring apps",
+                getDefaultValue: () => true
+            );
+            checkApplicationsStatus.AddAlias("-ma");
+            configCommandApp.AddOption(checkApplicationsStatus);
+
+            var sendMonitoringData = new Option<bool>(
+                name: "--send-data",
+                getDefaultValue: () => true,
+                description: "Send monitoring data on server"
+            );
+            sendMonitoringData.AddAlias("-sd");
+            configCommandApp.AddOption(sendMonitoringData);
+
+            var sendNotifications = new Option<bool>(
+                name: "--send-notifications",
+                getDefaultValue: () => true,
+                description: "Send notifications"
+            );
+            sendNotifications.AddAlias("-sn");
+            configCommandApp.AddOption(sendNotifications);
+
+            var softExiting = new Option<bool>(
+                name: "--soft-exit",
+                getDefaultValue: () => true,
+                description: "Alows to soft exit monitoring services"
+            );
+            softExiting.AddAlias("-se");
+            configCommandApp.AddOption(softExiting);
+
+            var monitoringIntervalForAll = new Option<int>(
+                name: "--monitor-cycle",
+                getDefaultValue: () => 60,
+                description: "Monitoring interval for all applications"
+            );
+            monitoringIntervalForAll.AddAlias("-mc");
+            configCommandApp.AddOption(monitoringIntervalForAll);
+
+            var enableLogging = new Option<bool>(
+                name: "--enable-logging",
+                getDefaultValue: () => true,
+                description: "Enable logging"
+            );
+            enableLogging.AddAlias("-el");
+            configCommandApp.AddOption(enableLogging);
+            
+            configCommandApp.SetHandler((CheckApplicationsStatus, SendMonitoringData, SendNotifications, SoftExiting, 
+                        EnableLogging, MonitoringInterval) =>
+            {
+                var AppSettings = new ServicesSettings
+                {
+                    CheckApplicationsStatus = CheckApplicationsStatus,
+                    SendMonitoringData = SendMonitoringData,
+                    SendNotifications = SendNotifications,
+                    EnableLogging = EnableLogging,
+                    MonitoringInterval = MonitoringInterval,
+                    SoftExiting = SoftExiting
+                };
+                var config = GetConfig();
+                config.AppSettings = AppSettings;
+                SaveApplicationConfig(StaticClaims.PathToConfig, config);
+
+                Console.WriteLine($"Check Applications Status: {CheckApplicationsStatus}");
+                Console.WriteLine($"Send Monitoring Data: {SendMonitoringData}");
+                Console.WriteLine($"Send Notifications: {SendNotifications}");
+                Console.WriteLine($"Enable Logging: {EnableLogging}");
+                Console.WriteLine($"Soft Exiting: {SoftExiting}");
+                Console.WriteLine($"Monitoring Interval: {MonitoringInterval} seconds");
+            },
+            checkApplicationsStatus,
+            sendMonitoringData,
+            sendNotifications,
+            softExiting,
+            enableLogging,
+            monitoringIntervalForAll);
+
+            var monitorCpuUsage = new Option<bool>(
+                name: "--monitor-cpu",
+                getDefaultValue: () => true,
+                description: "Monitor CPU usage for sending on server"
+            );
+            monitorCpuUsage.AddAlias("-mc");
+            configCommandResMon.AddOption(monitorCpuUsage);
+
+            var monitorMemsage = new Option<bool>(
+                name: "--monitor-ram",
+                getDefaultValue: () => true,
+                description: "Monitor RAM usage for sending on server"
+            );
+            monitorMemsage.AddAlias("-mr");
+            configCommandResMon.AddOption(monitorMemsage);
+
+            var monitorDiskUsage = new Option<bool>(
+                name: "--monitor-disk",
+                getDefaultValue: () => true,
+                description: "Monitor disk usage for sending on server"
+            );
+            monitorDiskUsage.AddAlias("-md");
+            configCommandResMon.AddOption(monitorDiskUsage);
+
+            var cpuUsageThreshold = new Option<int>(
+                name: "--cpu-threshold",
+                getDefaultValue: () => 80,
+                description: "Set CPU usage threshold in %"
+            );
+            configCommandResMon.AddOption(cpuUsageThreshold);
+
+            var ramUsageThreshold = new Option<int>(
+                name: "--ram-threshold",
+                getDefaultValue: () => 90,
+                description: "Set RAM usage threshold in %"
+            );
+            configCommandResMon.AddOption(ramUsageThreshold);
+
+            var disksageThreshold = new Option<int>(
+                name: "--disk-threshold",
+                getDefaultValue: () => 90,
+                description: "Set disk usage threshold in %"
+            );
+            configCommandResMon.AddOption(disksageThreshold);
+
+            configCommandResMon.SetHandler((monitorCpuUsage, monitorMemUsage, monitorDiskUsage, cpuUsageThreshold, 
+                        ramUsageThreshold, disksageThreshold) =>
+            {
+                
+                var config = GetConfig();
+                config.ResMonSettings = new ResourceMonitoringSettings
+                {
+                    MonitorCpuUsage = monitorCpuUsage,
+                    MonitorMemoryUsage = monitorMemUsage,
+                    MonitorDiskUsage = monitorDiskUsage,
+                    CpuUsageThreshold = cpuUsageThreshold,
+                    MemoryUsageThreshold = ramUsageThreshold,
+                    DiskUsageThreshold = disksageThreshold
+                };
+
+                SaveApplicationConfig(StaticClaims.PathToConfig, config);
+
+                Console.WriteLine($"MonitorCpuUsage: {monitorCpuUsage}");
+                Console.WriteLine($"MonitorMemoryUsage: {monitorMemUsage}");
+                Console.WriteLine($"MonitorDiskUsage: {monitorDiskUsage}");
+                Console.WriteLine($"CpuUsageThreshold: {cpuUsageThreshold}%");
+                Console.WriteLine($"MemoryUsageThreshold: {ramUsageThreshold}%");
+                Console.WriteLine($"DiskUsageThreshold: {disksageThreshold}%");
+            },
+            monitorCpuUsage,
+            monitorMemsage,
+            monitorDiskUsage,
+            cpuUsageThreshold,
+            ramUsageThreshold,
+            disksageThreshold);
+
+            config.Add(configCommandApp);
+            config.Add(configCommandResMon);
+            rootCommand.AddCommand(config);
+            // CONFIG END
             rootCommand.Invoke(args);
         }
         /// <summary>
@@ -175,15 +356,15 @@ checkingInterval, restartDelay, noNotify) =>
                 if (File.Exists(StaticClaims.PathToConfig))
                 {
                     var json = File.ReadAllText(StaticClaims.PathToConfig);
-                    var config = JsonConvert.DeserializeObject<Config>(json) ?? CreateNewConfig();
+                    var config = JsonConvert.DeserializeObject<AppConfig>(json);
                     config.User.Name = value;
-                    SaveConfig(StaticClaims.PathToConfig, config);
+                    SaveApplicationConfig(StaticClaims.PathToConfig, config);
                 }
                 else 
                 {
-                    var config = CreateNewConfig();
+                    var config = CreateNewAppConfig();
                     config.User.Name = value;
-                    SaveConfig(StaticClaims.PathToConfig, config);
+                    SaveApplicationConfig(StaticClaims.PathToConfig, config);
                 }
             }
         }
@@ -201,22 +382,22 @@ checkingInterval, restartDelay, noNotify) =>
                     if (File.Exists(StaticClaims.PathToConfig))
                     {
                         var json = File.ReadAllText(StaticClaims.PathToConfig);
-                        var config = JsonConvert.DeserializeObject<Config>(json) ?? CreateNewConfig();
+                        var config = JsonConvert.DeserializeObject<AppConfig>(json);
                         config.User.Email = value;
-                        SaveConfig(StaticClaims.PathToConfig, config);
+                        SaveApplicationConfig(StaticClaims.PathToConfig, config);
                     }
                     else 
                     {
-                         var config = CreateNewConfig();
+                        var config = CreateNewAppConfig();
                         config.User.Email = value;
-                        SaveConfig(StaticClaims.PathToConfig, config);
+                        SaveApplicationConfig(StaticClaims.PathToConfig, config);
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Stops spyserv watcher
+        /// Stops spyserv services
         /// </summary>
         private static void StopServices()
         {
@@ -247,24 +428,26 @@ checkingInterval, restartDelay, noNotify) =>
 
         private static void AddAppToConfig(MonitoredApp app)
         {
-            var configFilePath = Path.Combine(AppContext.BaseDirectory, StaticClaims.PathToConfig);
-            Config config;
+            var configFilePath = Path.Combine(AppContext.BaseDirectory, StaticClaims.PathToMonitoredAppsConf);
+            MonitoredAppsConfig config;
 
             if (File.Exists(configFilePath))
             {
                 var json = File.ReadAllText(configFilePath);
-                config = JsonConvert.DeserializeObject<Config>(json) ?? CreateNewConfig();
+                config = JsonConvert.DeserializeObject<MonitoredAppsConfig>(json);
             }
-            else config = CreateNewConfig();
+            else config = CreateNewMonitoringConfig();
 
             if (!config.MonitoredApps.Contains(app)) config.MonitoredApps.Add(app);
 
-            SaveConfig(configFilePath, config);
+            SaveMonitoringConfig(configFilePath, config);
         }
 
-        private static Config CreateNewConfig()
+        private static AppConfig CreateNewAppConfig()
         {
-            var config = new Config();
+            var config = new AppConfig();
+            config.AppSettings = new ServicesSettings();
+            config.ResMonSettings = new ResourceMonitoringSettings();
             config.Debug ??= new DebugConfig();
             config.Release ??= new ReleaseConfig();
             config.Debug.Pathes ??= new Pathes
@@ -286,21 +469,41 @@ checkingInterval, restartDelay, noNotify) =>
             return config;
         }
 
-        private static Config LoadConfig(string configFilePath)
+        private static AppConfig GetConfig()
+        {
+            if (File.Exists(StaticClaims.PathToConfig))
+            {
+                var json = File.ReadAllText(StaticClaims.PathToConfig);
+                return JsonConvert.DeserializeObject<AppConfig>(json) 
+                ?? throw new JsonSerializationException($"Error in desirialization {StaticClaims.PathToConfig}.");
+            }
+            else
+            {
+                var conf = CreateNewAppConfig();
+                SaveApplicationConfig(StaticClaims.PathToConfig, conf);
+                return conf;
+            }
+        }
+
+        private static MonitoredAppsConfig CreateNewMonitoringConfig()
+        {
+            var config = new MonitoredAppsConfig();
+
+            return config;
+        }
+
+        private static MonitoredAppsConfig LoadMonitoringConfig(string configFilePath)
         {
             if (File.Exists(configFilePath))
             {
                 var json = File.ReadAllText(configFilePath);
-                return JsonConvert.DeserializeObject<Config>(json) 
+                return JsonConvert.DeserializeObject<MonitoredAppsConfig>(json) 
                 ?? throw new JsonSerializationException($"Error in desirialization {configFilePath}.");
             }
-            else
-            {
-                return new Config();
-            }
+            else return CreateNewMonitoringConfig();
         }
 
-        private static void SaveConfig(string configFilePath, Config config)
+        private static void SaveMonitoringConfig(string configFilePath, MonitoredAppsConfig config)
         {
             if (File.Exists(configFilePath))
             {
@@ -311,6 +514,22 @@ checkingInterval, restartDelay, noNotify) =>
             {
                 Directory.CreateDirectory("../src/");
                 var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                File.WriteAllText(configFilePath, json);
+            }
+        }
+
+        private static void SaveApplicationConfig(string configFilePath, AppConfig config)
+        {
+            if (File.Exists(configFilePath))
+            {
+                var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                File.WriteAllText(configFilePath, json);
+            }
+            else 
+            {
+                Directory.CreateDirectory("../src/");
+                var json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                File.Create(StaticClaims.PathToConfig).Dispose();
                 File.WriteAllText(configFilePath, json);
             }
         }
@@ -377,15 +596,15 @@ checkingInterval, restartDelay, noNotify) =>
         /// <param name="appName">Application name</param>
         private static void UntrackApplication(string appName)
         {
-            var configFilePath = Path.Combine(AppContext.BaseDirectory, StaticClaims.PathToConfig);
+            var configFilePath = Path.Combine(AppContext.BaseDirectory, StaticClaims.PathToMonitoredAppsConf);
 
-            var config = LoadConfig(configFilePath);
+            var config = LoadMonitoringConfig(configFilePath);
 
             if (config.MonitoredApps.Select(x => x.Name).Contains(appName))
             {
                 var app = config.MonitoredApps.First(a => a.Name == appName);
                 config.MonitoredApps.Remove(app);
-                SaveConfig(configFilePath, config);
+                SaveMonitoringConfig(configFilePath, config);
                 Console.WriteLine($"spyserv untrack: Application '{appName}' removed from the config.");
             }
             else

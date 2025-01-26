@@ -112,36 +112,19 @@ namespace spyserv_services.Services
             throw new Exception("Error retrieving system resource usage");
         }
 
-        private Config LoadConfig(string configFilePath)
+        private MonitoredAppsConfig LoadConfig(string configFilePath)
         {
             if (File.Exists(Path.Combine(AppContext.BaseDirectory, StaticClaims.PathToConfig)))
             {
                 var json = File.ReadAllText(configFilePath);
-                return JsonConvert.DeserializeObject<Config>(json) ?? new Config();
+                return JsonConvert.DeserializeObject<MonitoredAppsConfig>(json) ?? new MonitoredAppsConfig();
             }
             else return CreateNewConfig();
         }
 
-        private static Config CreateNewConfig()
+        private static MonitoredAppsConfig CreateNewConfig()
         {
-            var config = new Config();
-            config.Debug ??= new DebugConfig();
-            config.Release ??= new ReleaseConfig();
-            config.Debug.Pathes ??= new Pathes
-            {
-                SpyservApi = config.Debug?.Pathes?.SpyservApi ?? "../",
-                SpyservWatcher = config.Debug?.Pathes?.SpyservWatcher ?? "../"
-            };
-            config.Release.Pathes ??= new Pathes
-            {
-                SpyservApi = config.Release?.Pathes?.SpyservApi ?? "../",
-                SpyservWatcher = config.Release?.Pathes?.SpyservWatcher ?? "../"
-            };
-            config.User ??= new User
-            {
-                Name = config.User?.Name ?? "unknown",
-                Email = config.User?.Email ?? "uknown"
-            };
+            var config = new MonitoredAppsConfig();
             
             return config;
         }

@@ -3,12 +3,19 @@ namespace spyserv.Core
     /// <summary>
     /// Classes representing config.json
     /// </summary>
-    public class Config
+    /// 
+    public class MonitoredAppsConfig
     {
+        public List<MonitoredApp>? MonitoredApps { get; set; } = [];
+    }
+
+    public class AppConfig
+    {
+        public ServicesSettings? AppSettings;
+        public ResourceMonitoringSettings? ResMonSettings;
+        public User? User;
         public DebugConfig? Debug { get; set; }
         public ReleaseConfig? Release { get; set; }
-        public List<MonitoredApp>? MonitoredApps { get; set; } = [];
-        public User? User;
     }
 
     public class DebugConfig
@@ -26,4 +33,64 @@ namespace spyserv.Core
         public string SpyservApi { get; set; } = string.Empty;
         public string SpyservWatcher { get; set; } = string.Empty;
     }
+
+        public class ServicesSettings
+        {
+            public bool CheckApplicationsStatus { get; set; } = true;
+            public bool SendMonitoringData { get; set; } = true;
+            public bool SendNotifications { get; set; } = true;
+            public bool SoftExiting { get; set; } = true;
+            public int MonitoringInterval 
+            {
+                get => _monitoringInterval;
+                set
+                {
+                    if (value < 0) throw new ArgumentException($"MonitoringInterval should be >0 instead of {value}");
+                    _monitoringInterval = value;
+                }
+            }
+            public bool EnableLogging { get; set; } = true;
+
+            private int _monitoringInterval = 60;
+        }
+
+
+        public class ResourceMonitoringSettings
+        {
+            public bool MonitorCpuUsage { get; set; } = true;         
+            public bool MonitorMemoryUsage { get; set; } = true;     
+            public bool MonitorDiskUsage { get; set; } = true;       
+            public int CpuUsageThreshold 
+            { 
+                get => _cpuUsageThreshold; 
+                set 
+                {
+                    if (value < 0 || value > 100) throw new ArgumentException($"CpuUsageThreshold should be >0 and <=100, instead of {value}");
+                    _cpuUsageThreshold = value;
+                } 
+            }         
+            public int MemoryUsageThreshold 
+            { 
+                get => _memoryUsageThreshold; 
+                set 
+                {
+                    if (value < 0 || value > 100) throw new ArgumentException($"MemoryUsageThreshold should be >0 and <=100, instead of {value}");
+                    _memoryUsageThreshold = value;
+                } 
+            }         
+
+            public int DiskUsageThreshold 
+            { 
+                get => _diskUsageThreshold; 
+                set 
+                {
+                    if (value < 0 || value > 100) throw new ArgumentException($"DiskUsageThreshold should be >0 and <=100, instead of {value}");
+                    _diskUsageThreshold = value;
+                } 
+            }  
+
+            private int _cpuUsageThreshold = 80;
+            private int _memoryUsageThreshold = 90;
+            private int _diskUsageThreshold = 90;
+        }
 }
