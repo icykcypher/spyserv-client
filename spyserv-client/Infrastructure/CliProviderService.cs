@@ -8,7 +8,29 @@ namespace spyserv.Infrastructure
 {
     public static class CliProviderService 
     {
-        private static readonly object FileLock = new object();
+        /// <summary>
+        /// Creates a new default application configuration.
+        /// </summary>
+        /// <returns>
+        /// A new instance of <see cref="AppConfig"/> with default values.
+        /// </returns>
+        /// <remarks>
+        /// This method initializes a new <see cref="AppConfig"/> object and assigns default values 
+        /// to its properties, ensuring that no property remains uninitialized. It configures:
+        /// <list type="bullet">
+        /// <item><description><see cref="AppConfig.AppSettings"/> as an instance of <see cref="ServicesSettings"/>.</description></item>
+        /// <item><description><see cref="AppConfig.ResMonSettings"/> as an instance of <see cref="ResourceMonitoringSettings"/>.</description></item>
+        /// <item><description><see cref="AppConfig.Debug"/> and <see cref="AppConfig.Release"/> as instances of <see cref="DebugConfig"/> and <see cref="ReleaseConfig"/> respectively.</description></item>
+        /// <item><description><see cref="DebugConfig.Pathes"/> and <see cref="ReleaseConfig.Pathes"/> initialized with default paths.</description></item>
+        /// <item><description><see cref="AppConfig.User"/> with default values ("null" for Name and Email).</description></item>
+        /// </list>
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// var defaultConfig = CreateNewAppConfig();
+        /// </code>
+        /// </example>
         public static void ConfigureCommands(string[] args)
         {
             var rootCommand = new RootCommand("SpyServ CLI - Manage and monitor your system and applications");
@@ -369,6 +391,32 @@ namespace spyserv.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Configures the user's email in the application configuration file.
+        /// </summary>
+        /// <param name="value">
+        /// The email address to be set for the user. It should follow a valid email format.
+        /// </param>
+        /// <remarks>
+        /// This method first checks if the provided <paramref name="value"/> is not null, empty, or whitespace. 
+        /// If invalid, it prints an error message. Then it validates if the email follows a proper format using a regular expression.
+        /// If the email format is incorrect, an error message is displayed. If the email is valid, the method updates the user's email
+        /// in the configuration file located at <see cref="StaticClaims.PathToConfig"/>. If the file exists, it reads and updates the configuration.
+        /// If the file doesn't exist, it creates a new configuration and sets the email before saving it.
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// ConfigureUserEmail("user@example.com");
+        /// </code>
+        /// </example>
+        /// <exception cref="System.IO.IOException">
+        /// Thrown if there is an error reading from or writing to the configuration file.
+        /// </exception>
+        /// <exception cref="Newtonsoft.Json.JsonSerializationException">
+        /// Thrown if deserialization or serialization of the JSON configuration fails.
+        /// </exception>
+        /// <seealso cref="SaveApplicationConfig(string, AppConfig)"/>
         private static void ConfigureUserEmail(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -397,8 +445,25 @@ namespace spyserv.Infrastructure
         }
 
         /// <summary>
-        /// Stops spyserv services
+        /// Stops the monitoring services by killing the associated process.
         /// </summary>
+        /// <remarks>
+        /// This method attempts to stop the monitoring services by searching for processes
+        /// with the name specified in <see cref="StaticClaims.SpyservServiceProcessName"/>.
+        /// If one or more processes are found, they are terminated using the <see cref="Process.Kill"/> method.
+        /// If no processes are found, a message is printed indicating that the monitoring services are not running.
+        /// If an error occurs while attempting to kill the processes, an error message is printed.
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// StopServices();
+        /// </code>
+        /// </example>
+        /// <exception cref="System.InvalidOperationException">
+        /// Thrown if an error occurs while killing a process.
+        /// </exception>
+        /// <seealso cref="Process.GetProcessesByName(string)"/>
         private static void StopServices()
         {
             try
@@ -415,9 +480,27 @@ namespace spyserv.Infrastructure
         }
 
         /// <summary>
-        /// Adds to config.json application name 
+        /// Tracks an application by adding it to the monitored applications configuration.
         /// </summary>
-        /// <param name="appName">Application name</param>
+        /// <param name="app">
+        /// The <see cref="MonitoredApp"/> object to be tracked and added to the configuration.
+        /// </param>
+        /// <remarks>
+        /// This method checks if the <paramref name="app"/> is not null. If valid, it calls the <see cref="AddAppToConfig"/> method 
+        /// to add the application to the monitoring configuration. If the application is null, an error message is printed to the console.
+        /// This method is asynchronous and completes the task immediately.
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// var app = new MonitoredApp { Name = "MyApp", Path = "/path/to/app" };
+        /// await TrackApplication(app);
+        /// </code>
+        /// </example>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if the <paramref name="app"/> is null when trying to track it.
+        /// </exception>
+        /// <seealso cref="AddAppToConfig(MonitoredApp)"/>
         private async static Task TrackApplication(MonitoredApp app)
         {
             if (app is not null) AddAppToConfig(app);
@@ -426,6 +509,33 @@ namespace spyserv.Infrastructure
             await Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Adds a new application to the monitored apps configuration file.
+        /// </summary>
+        /// <param name="app">
+        /// The <see cref="MonitoredApp"/> object to be added to the configuration.
+        /// </param>
+        /// <remarks>
+        /// This method reads the existing monitored apps configuration file from the specified path.
+        /// If the file exists, it deserializes the content into a <see cref="MonitoredAppsConfig"/> object.
+        /// If the file does not exist, a new configuration is created using <see cref="CreateNewMonitoringConfig"/>.
+        /// The method checks if the application is already present in the configuration before adding it.
+        /// The updated configuration is then saved back to the file.
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// var newApp = new MonitoredApp { Name = "NewApp", Path = "/path/to/app" };
+        /// AddAppToConfig(newApp);
+        /// </code>
+        /// </example>
+        /// <exception cref="System.IO.IOException">
+        /// Thrown if there is an error reading from or writing to the configuration file.
+        /// </exception>
+        /// <exception cref="Newtonsoft.Json.JsonSerializationException">
+        /// Thrown if there is an error during deserialization of the JSON configuration file.
+        /// </exception>
+        /// <seealso cref="SaveMonitoringConfig(string, MonitoredAppsConfig)"/>
         private static void AddAppToConfig(MonitoredApp app)
         {
             var configFilePath = Path.Combine(AppContext.BaseDirectory, StaticClaims.PathToMonitoredAppsConf);
@@ -443,6 +553,29 @@ namespace spyserv.Infrastructure
             SaveMonitoringConfig(configFilePath, config);
         }
 
+        /// <summary>
+        /// Creates a new default application configuration.
+        /// </summary>
+        /// <returns>
+        /// A new instance of <see cref="AppConfig"/> with default values.
+        /// </returns>
+        /// <remarks>
+        /// This method initializes a new <see cref="AppConfig"/> object and assigns default values 
+        /// to its properties, ensuring that no property remains uninitialized. It configures:
+        /// <list type="bullet">
+        /// <item><description><see cref="AppConfig.AppSettings"/> as an instance of <see cref="ServicesSettings"/>.</description></item>
+        /// <item><description><see cref="AppConfig.ResMonSettings"/> as an instance of <see cref="ResourceMonitoringSettings"/>.</description></item>
+        /// <item><description><see cref="AppConfig.Debug"/> and <see cref="AppConfig.Release"/> as instances of <see cref="DebugConfig"/> and <see cref="ReleaseConfig"/> respectively.</description></item>
+        /// <item><description><see cref="DebugConfig.Pathes"/> and <see cref="ReleaseConfig.Pathes"/> initialized with default paths.</description></item>
+        /// <item><description><see cref="AppConfig.User"/> with default values ("null" for Name and Email).</description></item>
+        /// </list>
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// var defaultConfig = CreateNewAppConfig();
+        /// </code>
+        /// </example>
         private static AppConfig CreateNewAppConfig()
         {
             var config = new AppConfig();
@@ -469,13 +602,39 @@ namespace spyserv.Infrastructure
             return config;
         }
 
+        /// <summary>
+        /// Retrieves the application configuration from a JSON file.
+        /// </summary>
+        /// <returns>
+        /// An <see cref="AppConfig"/> object containing the application settings.
+        /// </returns>
+        /// <remarks>
+        /// This method checks whether the configuration file exists at <see cref="StaticClaims.PathToConfig"/>.
+        /// If the file exists, it reads and deserializes the JSON content into an <see cref="AppConfig"/> object.
+        /// If the file does not exist, a new configuration is created using <see cref="CreateNewAppConfig"/>,
+        /// saved to the file, and returned.
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// var config = GetConfig();
+        /// </code>
+        /// </example>
+        /// <exception cref="System.IO.IOException">
+        /// Thrown if an error occurs while reading or writing the configuration file.
+        /// </exception>
+        /// <exception cref="Newtonsoft.Json.JsonSerializationException">
+        /// Thrown if deserialization fails due to invalid JSON content.
+        /// </exception>
+        /// <seealso cref="CreateNewAppConfig()"/>
+        /// <seealso cref="SaveApplicationConfig(string, AppConfig)"/>
         private static AppConfig GetConfig()
         {
             if (File.Exists(StaticClaims.PathToConfig))
             {
                 var json = File.ReadAllText(StaticClaims.PathToConfig);
                 return JsonConvert.DeserializeObject<AppConfig>(json) 
-                ?? throw new JsonSerializationException($"Error in desirialization {StaticClaims.PathToConfig}.");
+                ?? throw new JsonSerializationException($"Error in deserialization {StaticClaims.PathToConfig}.");
             }
             else
             {
@@ -492,17 +651,73 @@ namespace spyserv.Infrastructure
             return config;
         }
 
+        /// <summary>
+        /// Loads the monitoring configuration from a JSON file.
+        /// </summary>
+        /// <param name="configFilePath">
+        /// The file path from which the monitoring configuration should be loaded.
+        /// </param>
+        /// <returns>
+        /// A <see cref="MonitoredAppsConfig"/> object containing the monitoring configuration.
+        /// </returns>
+        /// <remarks>
+        /// This method checks whether the specified configuration file exists.
+        /// If it does, the method reads the file, deserializes the JSON content, and returns the 
+        /// corresponding <see cref="MonitoredAppsConfig"/> object.
+        /// If the file does not exist, a new default configuration is created and returned.
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// var config = LoadMonitoringConfig("monitoring-config.json");
+        /// </code>
+        /// </example>
+        /// <exception cref="System.IO.IOException">
+        /// Thrown if an error occurs while reading the file.
+        /// </exception>
+        /// <exception cref="Newtonsoft.Json.JsonSerializationException">
+        /// Thrown if deserialization fails due to invalid JSON content.
+        /// </exception>
+        /// <seealso cref="CreateNewMonitoringConfig()"/>
         private static MonitoredAppsConfig LoadMonitoringConfig(string configFilePath)
         {
             if (File.Exists(configFilePath))
             {
                 var json = File.ReadAllText(configFilePath);
                 return JsonConvert.DeserializeObject<MonitoredAppsConfig>(json) 
-                ?? throw new JsonSerializationException($"Error in desirialization {configFilePath}.");
+                    ?? throw new JsonSerializationException($"Error in deserialization {configFilePath}.");
             }
             else return CreateNewMonitoringConfig();
         }
 
+        /// <summary>
+        /// Saves the monitoring configuration to a JSON file.
+        /// </summary>
+        /// <param name="configFilePath">
+        /// The file path where the monitoring configuration should be saved.
+        /// </param>
+        /// <param name="config">
+        /// The monitoring configuration object to be serialized and written to the file.
+        /// </param>
+        /// <remarks>
+        /// This method checks whether the specified configuration file exists.
+        /// If it does, the configuration is serialized to JSON and written to the file.
+        /// If the file does not exist, the required directory structure is created, 
+        /// and the JSON data is written to a newly created file.
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// var config = new MonitoredAppsConfig { MonitoredApps = new List<AppInfo>() };
+        /// SaveMonitoringConfig("monitoring-config.json", config);
+        /// </code>
+        /// </example>
+        /// <exception cref="System.IO.IOException">
+        /// Thrown if there is an issue creating or writing to the file.
+        /// </exception>
+        /// <exception cref="Newtonsoft.Json.JsonException">
+        /// Thrown if an error occurs during JSON serialization.
+        /// </exception>
         private static void SaveMonitoringConfig(string configFilePath, MonitoredAppsConfig config)
         {
             if (File.Exists(configFilePath))
@@ -518,6 +733,33 @@ namespace spyserv.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Saves the application configuration to a JSON file.
+        /// </summary>
+        /// <param name="configFilePath">
+        /// The file path where the configuration should be saved.
+        /// </param>
+        /// <param name="config">
+        /// The application configuration object to be serialized and written to the file.
+        /// </param>
+        /// <remarks>
+        /// This method checks if the specified configuration file exists. If it does, the configuration 
+        /// is serialized to JSON and written to the file. If the file does not exist, the necessary 
+        /// directory structure is created, a new configuration file is generated, and the JSON data is written to it.
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// var config = new AppConfig { Setting1 = "value1", Setting2 = "value2" };
+        /// SaveApplicationConfig("config.json", config);
+        /// </code>
+        /// </example>
+        /// <exception cref="System.IO.IOException">
+        /// Thrown if there is an issue creating or writing to the file.
+        /// </exception>
+        /// <exception cref="Newtonsoft.Json.JsonException">
+        /// Thrown if an error occurs during JSON serialization.
+        /// </exception>
         private static void SaveApplicationConfig(string configFilePath, AppConfig config)
         {
             if (File.Exists(configFilePath))
@@ -534,6 +776,35 @@ namespace spyserv.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Starts the SpyServ monitoring services.
+        /// </summary>
+        /// <remarks>
+        /// This method constructs the full path to the monitoring services binary, 
+        /// verifies its existence, and attempts to start it as a background process.
+        /// If the binary is not found, an error message is logged.
+        /// If an exception occurs while starting the process, an error message is displayed.
+        /// </remarks>
+        /// <example>
+        /// Example usage:
+        /// <code>
+        /// StartServices();
+        /// </code>
+        /// Expected output when the binary is missing:
+        /// <code>
+        /// spyserv start: Monitoring services binary was not found at /path/to/spyserv-services
+        /// </code>
+        /// Expected output when the process fails to start:
+        /// <code>
+        /// spyserv start: Failed to start monitoring services: [Error Message]
+        /// </code>
+        /// </example>
+        /// <exception cref="System.ComponentModel.Win32Exception">
+        /// Thrown if the process cannot be started due to system restrictions.
+        /// </exception>
+        /// <exception cref="System.IO.FileNotFoundException">
+        /// Thrown if the monitoring service binary does not exist.
+        /// </exception>
         private static void StartServices()
         {
             var baseDirectory = AppContext.BaseDirectory;
@@ -564,6 +835,33 @@ namespace spyserv.Infrastructure
             }
         }
 
+        /// <summary>
+        /// Checks whether a process with the specified name is currently running.
+        /// </summary>
+        /// <param name="processName">
+        /// The name of the process to check.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if at least one instance of the specified process is running; otherwise, <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// This method retrieves all running processes with the given name and checks if any exist.
+        /// If an exception occurs while retrieving processes, it logs an error message to the console 
+        /// and returns <c>false</c>.
+        /// </remarks>
+        /// <example>
+        /// Checking if "notepad" is running:
+        /// <code>
+        /// bool isRunning = IsProcessRunning("notepad");
+        /// Console.WriteLine(isRunning ? "Notepad is running." : "Notepad is not running.");
+        /// </code>
+        /// </example>
+        /// <exception cref="System.ComponentModel.Win32Exception">
+        /// Thrown if there is an issue accessing process information.
+        /// </exception>
+        /// <exception cref="System.InvalidOperationException">
+        /// Thrown if an error occurs while enumerating processes.
+        /// </exception>
         private static bool IsProcessRunning(string processName)
         {
             try
@@ -579,8 +877,23 @@ namespace spyserv.Infrastructure
         }
 
         /// <summary>
-        /// Shows spyserv api and watcher status 
+        /// Displays the current status of the SpyServ service.
         /// </summary>
+        /// <remarks>
+        /// This method checks whether the SpyServ service is running by verifying 
+        /// if the corresponding process is active. The status is then printed to the console.
+        /// </remarks>
+        /// <example>
+        /// Example output when SpyServ is running:
+        /// <code>
+        /// spyserv status: SpyServ is running.
+        /// </code>
+        /// Example output when SpyServ is not running:
+        /// <code>
+        /// spyserv status: SpyServ is not running.
+        /// </code>
+        /// </example>
+        /// <seealso cref="IsProcessRunning(string)"/>
         private static void ShowStatus()
         {
             var isSpyservServicesRunning = IsProcessRunning(StaticClaims.SpyservServiceProcessName);
@@ -589,11 +902,31 @@ namespace spyserv.Infrastructure
             else Console.WriteLine("spyserv status: SpyServ is running.");
         }
 
-
         /// <summary>
-        /// Removing from config.json application
+        /// Removes the specified application from the monitoring configuration if it exists.
         /// </summary>
-        /// <param name="appName">Application name</param>
+        /// <param name="appName">
+        /// The name of the application to be removed from monitoring.
+        /// </param>
+        /// <remarks>
+        /// This method loads the current monitoring configuration from a file, 
+        /// checks if the specified application is being monitored, and removes it 
+        /// if found. After modification, the updated configuration is saved back to the file.
+        /// </remarks>
+        /// <example>
+        /// To remove an application named "notepad":
+        /// <code>
+        /// UntrackApplication("notepad");
+        /// </code>
+        /// </example>
+        /// <exception cref="System.IO.IOException">
+        /// Thrown if there is an error accessing the configuration file.
+        /// </exception>
+        /// <exception cref="System.NullReferenceException">
+        /// Thrown if the monitoring configuration is unexpectedly null.
+        /// </exception>
+        /// <seealso cref="LoadMonitoringConfig(string)"/>
+        /// <seealso cref="SaveMonitoringConfig(string, MonitoringConfig)"/>
         private static void UntrackApplication(string appName)
         {
             var configFilePath = Path.Combine(AppContext.BaseDirectory, StaticClaims.PathToMonitoredAppsConf);
